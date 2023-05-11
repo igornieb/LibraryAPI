@@ -10,6 +10,7 @@ class LibraryUserSerializer(serializers.ModelSerializer):
 
 class AuthorSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(required=False)
+
     class Meta:
         model = Author
         fields = "__all__"
@@ -37,16 +38,20 @@ class BookCreateSerializer(serializers.ModelSerializer):
             owner = LibraryUser.objects.get(username=validated_data['created_by'], user_type="S")
         except LibraryUser.DoesNotExist:
             raise serializers.ValidationError({"detail": "LibraryUser does not exist or isn't set as staff"})
-        book = Book.objects.create(created_by=owner, title=validated_data['title'], description=validated_data['description'], isbn=validated_data['isbn'], published_date=validated_data['published_date'] )
+        book = Book.objects.create(created_by=owner, title=validated_data['title'],
+                                   description=validated_data['description'], isbn=validated_data['isbn'],
+                                   published_date=validated_data['published_date'])
         authors_data = validated_data.pop('authors')
         for author in authors_data:
             if author.get('id'):
                 try:
-                    book.authors.add(Author.objects.get(id=author.get("id"), first_name=author.get("first_name"), last_name=author.get('last_name')))
+                    book.authors.add(Author.objects.get(id=author.get("id"), first_name=author.get("first_name"),
+                                                        last_name=author.get('last_name')))
                 except Author.DoesNotExist:
                     raise serializers.ValidationError({"detail": "author does not exist"})
             else:
-                book.authors.add(Author.objects.create(first_name=author.get("first_name"), last_name=author.get('last_name')))
+                book.authors.add(
+                    Author.objects.create(first_name=author.get("first_name"), last_name=author.get('last_name')))
         return book
 
 
@@ -56,3 +61,31 @@ class BookUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Book
         fields = ["authors", "isbn", "title", "description", "published_date"]
+
+    def update(self, book, validated_data):
+        authors_data = validated_data.pop('authors')
+        # remove all objects from manytomany field
+        book.authors.clear()
+        # add new objects to manytomany field
+        for author in authors_data:
+            if author.get('id'):
+                try:
+                    book.authors.add(Author.objects.get(id=author.get("id"), first_name=author.get("first_name"),
+                                                        last_name=author.get('last_name')))
+                except Author.DoesNotExist:
+                    raise serializers.ValidationError({"detail": "author does not exist"})
+            else:
+                book.authors.add(
+                    Author.objects.create(first_name=author.get("first_name"), last_name=author.get('last_name')))
+        # set book values
+        book.authors = validated_data['authors']
+        book.title = validated_data['title']
+        book.description = validated_data['description']
+        book.published_date = validated_data['published_date']
+        return book
+
+
+class LibraryUserCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        fields = ['username', 'password', 'email', 'first_name', 'last_name']
+        model = LibraryUser
