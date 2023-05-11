@@ -64,7 +64,7 @@ class BookModelTest(TestCase):
 
     def test_isbn_validation(self):
         # test isbn validator
-        valid_isbn = ["0545010225", "9781234567", "9788390021"]
+        valid_isbn = ["007462542X", "9971502100", "9604250590"]
         invalid_isbn = ["0-545-01022-5", "123-456-888", '8781234567', "9788390022"]
         for sn in valid_isbn:
             book = Book(created_by=self.user, title="1", description="1", isbn=sn, published_date=datetime.now())

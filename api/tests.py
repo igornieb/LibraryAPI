@@ -100,12 +100,12 @@ class BookListTest(APITestCase):
                 "first_name": self.AMick.first_name,
                 "last_name": self.AMick.last_name,
             }]
-        query['isbn'] = "9781234567"
+        query['isbn'] = "007462542X"
         response = self.client.post(self.url, query, format='json')
         # book was created, response code and data matches expectations
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEquals(Book.objects.filter(isbn="9781234567").exists(), True)
-        self.assertEqual(response.data, BookSerializer(Book.objects.get(isbn="9781234567")).data)
+        self.assertEquals(Book.objects.filter(isbn="007462542X").exists(), True)
+        self.assertEqual(response.data, BookSerializer(Book.objects.get(isbn="007462542X")).data)
 
     def test_method_post_authenticated_invalid(self):
         # wrong created_by (user doesn't exist)
@@ -132,12 +132,12 @@ class BookListTest(APITestCase):
         # wrong isbn, correct username
         query_isbn = query_createdby
         query_isbn['created_by'] = self.staff.username
-        query_isbn['isbn'] = "9788390022"
+        query_isbn['isbn'] = "97883900"
         response = self.client.post(self.url, query_isbn, format='json')
+        # record wasn't created
+        self.assertEquals(Book.objects.filter(isbn="97883900").exists(), False)
         # got error response code
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        # record wasn't created
-        self.assertEquals(Book.objects.filter(isbn="9788390021").exists(), False)
 
 
 class BookDetailsTest(APITestCase):
@@ -175,14 +175,14 @@ class BookDetailsTest(APITestCase):
             ],
             "title": "title",
             "description": "description",
-            "isbn": "9781234567",
+            "isbn": "007462542X",
             "published_date": "2023-04-11T08:42:07Z"
         }
 
         response = self.client.patch(self.url, query, format='json')
         # correct response code
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.book = Book.objects.get(isbn="9781234567")
+        self.book = Book.objects.get(isbn="007462542X")
         # correct response data
         self.assertEqual(response.data, BookSerializer(self.book).data)
         # new author got saved
@@ -192,7 +192,7 @@ class BookDetailsTest(APITestCase):
         # new author got saved
         self.assertEqual(self.book.authors.filter(first_name="test_name").exists(), True)
         # isbn got updated
-        self.assertEqual(self.book.isbn, "9781234567")
+        self.assertEqual(self.book.isbn, "007462542X")
 
     def test_method_patch_valid_authentiated_unauthorized(self):
         # valid data
@@ -244,7 +244,10 @@ class BookDetailsTest(APITestCase):
         # isbn did not change
         self.assertEqual(self.book.isbn, "9788390021")
         # authors did not change
-        self.assertEqual(self.book.authors.filter(id=self.AMick.id).exists(), False)
-        self.assertEqual(self.book.authors.filter(first_name="Juliusz").exists(), False)
+        self.assertEqual(self.book.authors.filter(id=self.AMick.id).exists(), True)
+        self.assertEqual(self.book.authors.filter(first_name="Juliusz").exists(), True)
+        self.assertEqual(self.book.authors.count(), 2)
+        self.assertEqual(self.book.authors.filter(first_name="TEST2").exists(), False)
+
         # isbn did not change
         self.assertEqual(Book.objects.filter(isbn="9781234567").exists(), False)
