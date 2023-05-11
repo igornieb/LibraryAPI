@@ -26,6 +26,9 @@ settings.py file.
 
 Isbn - a 10 digits number that identifies a specific book, an edition of a book, or a book-like product. It is used to identify specific books
 and is validated on object creation. Through this project isbns are used to identify books and access their endpoints.
+Example isbns:
+- 007462542X
+- 9788390021
 
 ## /api/auth/register/
 
