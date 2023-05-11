@@ -52,6 +52,7 @@ class BookCreateSerializer(serializers.ModelSerializer):
             else:
                 book.authors.add(
                     Author.objects.create(first_name=author.get("first_name"), last_name=author.get('last_name')))
+        book.save()
         return book
 
 
@@ -79,8 +80,10 @@ class BookUpdateSerializer(serializers.ModelSerializer):
                     Author.objects.create(first_name=author.get("first_name"), last_name=author.get('last_name')))
         # set book values
         book.title = validated_data['title']
+        book.isbn = validated_data['isbn']
         book.description = validated_data['description']
         book.published_date = validated_data['published_date']
+        book.save()
         return book
 
 
