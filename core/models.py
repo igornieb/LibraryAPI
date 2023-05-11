@@ -5,6 +5,8 @@ from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.utils import timezone
 
+from core.validators import ISBNValidator
+
 
 class LibraryUser(AbstractUser):
     USER_TYPE_CHOICES = [
@@ -26,13 +28,9 @@ class Author(models.Model):
 
 
 class Book(models.Model):
-    def upload_to(self, filename):
-        return f'uploads/{filename}'
-
     created_by = models.ForeignKey(LibraryUser, on_delete=models.DO_NOTHING)
     authors = models.ManyToManyField('Author')
-    isbn = models.CharField(max_length=17)
+    isbn = models.CharField(max_length=10, validators=[ISBNValidator])
     title = models.TextField()
     description = models.TextField()
-    # cover = models.ImageField(upload_to=upload_to, validators=[FileExtensionValidator(['jpeg', 'jpg', 'png', 'webp', 'webm', 'mp3', 'mp4'])])
     published_date = models.DateTimeField()
