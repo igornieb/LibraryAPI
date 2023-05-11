@@ -1,10 +1,10 @@
 from django.http import Http404
-from django.shortcuts import render
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
 from api.pagination import BookPagination
-from core.models import *
-from api.serializers import BookSerializer
+from api.serializers import *
 from rest_framework.generics import ListAPIView, ListCreateAPIView, RetrieveUpdateAPIView
-from api.permissions import IsStaff
 
 
 class BookList(ListCreateAPIView):
@@ -13,20 +13,35 @@ class BookList(ListCreateAPIView):
     pagination_class = BookPagination
 
     def create(self, request, *args, **kwargs):
-        # if superuser then create
-        pass
+        if request.user.is_superuser:
+            serializer = BookCreateSerializer(data=request.data)
+            if serializer.is_valid():
+                book = serializer.save()
+                return Response(BookSerializer(book).data, status=status.HTTP_201_CREATED)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response(status=status.HTTP_403_FORBIDDEN)
 
 
-class BookDetails(RetrieveUpdateAPIView):
-    serializer_class = BookSerializer
-    lookup_field = 'isbn'
+class BookDetails(APIView):
     def get_queryset(self):
         try:
-            return Book.objects.filter(isbn=self.kwargs['isbn'])
+            return Book.objects.get(isbn=self.kwargs['isbn'])
         except Book.DoesNotExist:
             raise Http404
-    def update(self, request, *args, **kwargs):
-        # if owner then edit
-        pass
 
-# Create your views here.
+    def get(self, request, *args, **kwargs):
+        return Response(BookSerializer(self.get_queryset()).data)
+
+    def patch(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        if queryset.created_by == request.user:
+            serializer = BookUpdateSerializer(queryset, data=request.data)
+            if serializer.is_valid():
+                book = serializer.save()
+                return Response(BookSerializer(book).data, status=status.HTTP_200_OK)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response(status=status.HTTP_403_FORBIDDEN)
