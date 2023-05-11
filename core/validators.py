@@ -1,20 +1,15 @@
-
-
+from django.core.exceptions import ValidationError
+import re
 def ISBNValidator(isbn):
-    if len(isbn) != 10:
-        return False
+    isbn = isbn.replace("-", "").replace(" ", "").upper();
+    match = re.search(r'^(\d{9})(\d|X)$', isbn)
+    if not match:
+        raise ValidationError("incorect isbn")
 
-    sum_ = 0
-    for i in range(9):
-        if 0 <= int(isbn[i]) <= 9:
-            sum_ += int(isbn[i]) * (10 - i)
-        else:
-            return False
+    digits = match.group(1)
+    check_digit = 10 if match.group(2) == 'X' else int(match.group(2))
 
-    if (isbn[9] != 'X' and
-            0 <= int(isbn[9]) <= 9):
-        return False
-
-    sum_ += 10 if isbn[9] == 'X' else int(isbn[9])
-
-    return (sum_ % 11 == 0)
+    result = sum((i + 1) * int(digit) for i, digit in enumerate(digits))
+    if (result % 11) == check_digit:
+        return isbn
+    raise ValidationError("incorect isbn")

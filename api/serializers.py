@@ -52,7 +52,6 @@ class BookCreateSerializer(serializers.ModelSerializer):
             else:
                 book.authors.add(
                     Author.objects.create(first_name=author.get("first_name"), last_name=author.get('last_name')))
-        book.save()
         return book
 
 
