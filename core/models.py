@@ -1,12 +1,14 @@
+import os
+
 from django.contrib.auth.models import AbstractUser
+from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.utils import timezone
 
 
 class LibraryUser(AbstractUser):
     USER_TYPE_CHOICES = [
-        ("A", "Admin"),
-        ("L", "Librarian"),
+        ("S", "Staff"),
         ("U", "User"),
     ]
     user_type = models.CharField(max_length=1, choices=USER_TYPE_CHOICES, default="U")
@@ -15,24 +17,22 @@ class LibraryUser(AbstractUser):
         return f"{self.user_type} {self.username}"
 
 
+class Author(models.Model):
+    first_name = models.CharField(max_length=255)
+    last_name = models.CharField(max_length=255)
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name}"
+
 
 class Book(models.Model):
+    def upload_to(self, filename):
+        return f'uploads/{filename}'
+
+    created_by = models.ForeignKey(LibraryUser, on_delete=models.DO_NOTHING)
+    authors = models.ManyToManyField('Author')
     isbn = models.CharField(max_length=17)
     title = models.TextField()
-    author = models.TextField()
     description = models.TextField()
+    # cover = models.ImageField(upload_to=upload_to, validators=[FileExtensionValidator(['jpeg', 'jpg', 'png', 'webp', 'webm', 'mp3', 'mp4'])])
     published_date = models.DateTimeField()
-
-
-class BookInstance(models.Model):
-    book = models.ForeignKey(Book, on_delete=models.CASCADE)
-    serial_number = models.CharField(max_length=50)
-    condition_description = models.TextField()
-
-
-class BorrowedBook(models.Model):
-    user = models.ForeignKey(LibraryUser, on_delete=models.CASCADE)
-    book = models.ForeignKey(Book, on_delete=models.CASCADE)
-    borrow_date = models.DateTimeField(default=timezone.now)
-    predicted_return_date = models.DateTimeField(default=timezone.now)
-    return_date = models.DateTimeField(default=timezone.now)
