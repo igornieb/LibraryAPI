@@ -3,8 +3,6 @@ from rest_framework.test import APITestCase
 from api.views import *
 from api.urls import TokenObtainPairView, TokenRefreshView
 from rest_framework.authtoken.models import Token
-from rest_framework_simplejwt.models import TokenUser
-from core.models import *
 from api.serializers import *
 
 
@@ -68,6 +66,7 @@ class BookListTest(APITestCase):
             "published_date": "2023-05-11T08:42:07Z"
         }
         response = self.client.post(self.url, query, format='json')
+        # book was not created, response code matches expectations
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertNotEquals(Book.objects.filter(isbn="9788390021").exists(), True)
 
@@ -91,6 +90,7 @@ class BookListTest(APITestCase):
             "published_date": "2023-05-11T08:42:07Z"
         }
         response = self.client.post(self.url, query, format='json')
+        # book was created, response code matches expectations
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEquals(Book.objects.filter(isbn="9788390021").exists(), True)
         self.assertEqual(response.data, BookSerializer(Book.objects.get(isbn="9788390021")).data)
@@ -102,12 +102,13 @@ class BookListTest(APITestCase):
             }]
         query['isbn'] = "9781234567"
         response = self.client.post(self.url, query, format='json')
+        # book was created, response code and data matches expectations
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEquals(Book.objects.filter(isbn="9781234567").exists(), True)
         self.assertEqual(response.data, BookSerializer(Book.objects.get(isbn="9781234567")).data)
 
     def test_method_post_authenticated_invalid(self):
-        # wrong created_by
+        # wrong created_by (user doesn't exist)
         query_createdby = {
             "authors": [
                 {
@@ -122,14 +123,20 @@ class BookListTest(APITestCase):
             "isbn": "9788390021",
             "published_date": "2023-05-11T08:42:07Z"
         }
-        # wrong isbn
-        query_isbn = query_createdby
-        query_isbn['isbn'] = "9788390022"
         response = self.client.post(self.url, query_createdby, format='json')
+        # got error response code
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        # record wasn't created
         self.assertEquals(Book.objects.filter(isbn="9788390022").exists(), False)
+
+        # wrong isbn, correct username
+        query_isbn = query_createdby
+        query_isbn['created_by'] = self.staff.username
+        query_isbn['isbn'] = "9788390022"
         response = self.client.post(self.url, query_isbn, format='json')
+        # got error response code
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        # record wasn't created
         self.assertEquals(Book.objects.filter(isbn="9788390021").exists(), False)
 
 
@@ -148,7 +155,9 @@ class BookDetailsTest(APITestCase):
 
     def test_method_get(self):
         response = self.client.get(self.url)
+        # correct response code
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # correct response data
         self.assertEqual(response.data, BookSerializer(self.book).data)
 
     def test_method_patch_valid_authentiated_authorized(self):
@@ -171,9 +180,12 @@ class BookDetailsTest(APITestCase):
         }
 
         response = self.client.patch(self.url, query, format='json')
+        # correct response code
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.book = Book.objects.get(isbn="9781234567")
+        # correct response data
         self.assertEqual(response.data, BookSerializer(self.book).data)
+        # new author got saved
         self.assertEqual(self.book.authors.filter(id=self.AMick.id).exists(), True)
         # old author got erased
         self.assertEqual(self.book.authors.filter(first_name="Juliusz", last_name="Slowacki").exists(), False)
@@ -183,6 +195,7 @@ class BookDetailsTest(APITestCase):
         self.assertEqual(self.book.isbn, "9781234567")
 
     def test_method_patch_valid_authentiated_unauthorized(self):
+        # valid data
         query = {
             "authors": [
                 {
@@ -203,34 +216,35 @@ class BookDetailsTest(APITestCase):
         self.token = Token.objects.create(user=self.not_owner)
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
         response = self.client.patch(self.url, query, format='json')
+        # got error response code
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        # new author didnt save
+        # new author didn't get saved
         self.assertNotEquals(self.book.authors.filter(first_name="test_name").exists(), True)
         # isbn didnt get updated
         self.assertNotEquals(self.book.isbn, "9781234567")
 
     def test_method_patch_valid_authentiated_authorized_invalid_data(self):
-        #incorrect isbn
+        # query with incorrect isbn
         query = {
-                "authors": [
-                     {
-                        "id": "999999999",
-                        "first_name": "TEST",
-                        "last_name": "TESTOWY"
-                    }
-                ],
-                "isbn": "9781234568",
-                "title": "TEST2",
-                "description": "TEST22",
-                "published_date": "2023-05-11T08:42:07Z"
-            }
+            "authors": [
+                {
+                    "id": "999999999",
+                    "first_name": "TEST",
+                    "last_name": "TESTOWY"
+                }
+            ],
+            "isbn": "9781234568",
+            "title": "TEST2",
+            "description": "TEST22",
+            "published_date": "2023-05-11T08:42:07Z"
+        }
 
         response = self.client.patch(self.url, query, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         # isbn did not change
         self.assertEqual(self.book.isbn, "9788390021")
-        #authors did not change
-        self.assertEqual(self.book.authors.filter(id = self.AMick.id).exists(), False)
+        # authors did not change
+        self.assertEqual(self.book.authors.filter(id=self.AMick.id).exists(), False)
         self.assertEqual(self.book.authors.filter(first_name="Juliusz").exists(), False)
         # isbn did not change
         self.assertEqual(Book.objects.filter(isbn="9781234567").exists(), False)
