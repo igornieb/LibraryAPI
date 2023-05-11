@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from api.pagination import BookPagination
 from api.serializers import *
-from rest_framework.generics import ListAPIView, ListCreateAPIView, RetrieveUpdateAPIView
+from rest_framework.generics import ListCreateAPIView
 
 
 class BookList(ListCreateAPIView):
@@ -45,6 +45,7 @@ class BookDetails(APIView):
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
+
 
 class RegisterLibraryUser(APIView):
     def post(self, request):

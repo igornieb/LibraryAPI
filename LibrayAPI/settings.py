@@ -77,7 +77,7 @@ DATABASES = {
     }
 }
 
-#rest-framework
+#rest-framework settigns
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -87,7 +87,7 @@ REST_FRAMEWORK = {
     )
 }
 
-# simple-jwt
+# simple-jwt settings
 
 
 SIMPLE_JWT = {

@@ -1,15 +1,12 @@
 from datetime import datetime
-
 from django.core.exceptions import ValidationError
 from django.test import TestCase
-from django.urls import reverse
 from core.models import *
 
 
 class LibraryUserModelTest(TestCase):
     @classmethod
     def setUpTestData(cls):
-        # creates testuser User
         LibraryUser.objects.create(username='testuser', first_name="TestName", last_name="LastName")
         LibraryUser.objects.create(username='testuser1', first_name="TestName1", last_name="LastName1", user_type="S")
 
@@ -43,11 +40,12 @@ class AuthorTest(TestCase):
         Author.objects.create(first_name="Adam", last_name="Mickiewicz")
 
     def test_user_creation(self):
-        # tests if user exists
+        # tests if was created
         author = Author.objects.filter(first_name="Adam", last_name="Mickiewicz")
         self.assertEqual(True, author.exists())
 
     def test_str_representation(self):
+        # string representation testing
         author = Author.objects.get(first_name="Adam", last_name="Mickiewicz")
         self.assertEqual(f"{author.first_name} {author.last_name}", str(author))
 
@@ -60,11 +58,12 @@ class BookModelTest(TestCase):
         self.user = LibraryUser.objects.create(username='testuser')
 
     def test_str_representation(self):
+        # string representation testing
         book = Book(created_by=self.user, title="1", description="1", isbn="9781234567", published_date=datetime.now())
         self.assertEqual(f"{book.title} {book.isbn}", str(book))
 
     def test_isbn_validation(self):
-        # test validator
+        # test isbn validator
         valid_isbn = ["0545010225", "9781234567", "9788390021"]
         invalid_isbn = ["0-545-01022-5", "123-456-888", '8781234567', "9788390022"]
         for sn in valid_isbn:
