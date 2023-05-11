@@ -1,7 +1,4 @@
-import os
-
 from django.contrib.auth.models import AbstractUser
-from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.utils import timezone
 
@@ -33,4 +30,8 @@ class Book(models.Model):
     isbn = models.CharField(max_length=10, validators=[ISBNValidator])
     title = models.TextField()
     description = models.TextField()
-    published_date = models.DateTimeField()
+    published_date = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+
+        return f"{self.title} {self.isbn}"
