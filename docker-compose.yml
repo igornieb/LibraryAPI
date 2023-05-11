@@ -1,0 +1,28 @@
+# version: "3."
+
+services:
+  postgres:
+    image: postgres
+    environment:
+      - POSTGRES_DB=database
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=user_password
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    entrypoint: /code/entrypoint.sh
+    environment:
+      - SECRET_KEY=django-secret-key-mpzhja*@nr1actcj(x7w7om_#y^l%65bmjz9e!%bci%226^6cn
+      - DEBUG=1
+      - DB_HOST=postgres
+      - DB_NAME=database
+      - DB_USER=user
+      - DB_PASS=user_password
+      - ACCESS_TOKEN_LIFETIME=30
+      - REFRESH_TOKEN_LIFETIME=1
+    volumes:
+      - .:/code/
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
