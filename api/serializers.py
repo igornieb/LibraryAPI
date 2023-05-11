@@ -85,7 +85,11 @@ class BookUpdateSerializer(serializers.ModelSerializer):
         return book
 
 
-class LibraryUserCreateSerializer(serializers.ModelSerializer):
+class RegisterUserSerializer(serializers.ModelSerializer):
     class Meta:
-        fields = ['username', 'password', 'email', 'first_name', 'last_name']
+        fields = ['username', 'password', 'first_name', 'last_name']
         model = LibraryUser
+
+    def create(self, validated_data):
+        user = LibraryUser.objects.create_user(username=validated_data['username'], first_name=validated_data['first_name'], last_name=validated_data['last_name'], password=validated_data['password'])
+        return user
