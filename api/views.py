@@ -1,5 +1,6 @@
 from django.http import Http404
 from rest_framework import status
+from api.permissions import *
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from api.pagination import BookPagination
@@ -11,18 +12,15 @@ class BookList(ListCreateAPIView):
     queryset = Book.objects.all()
     serializer_class = BookSerializer
     pagination_class = BookPagination
+    permission_classes = [IsSuperuserOrReadOnly]
 
     def create(self, request, *args, **kwargs):
-        if request.user.is_superuser:
-            serializer = BookCreateSerializer(data=request.data)
-            if serializer.is_valid():
-                book = serializer.save()
-                return Response(BookSerializer(book).data, status=status.HTTP_201_CREATED)
-            else:
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer = BookCreateSerializer(data=request.data)
+        if serializer.is_valid():
+            book = serializer.save()
+            return Response(BookSerializer(book).data, status=status.HTTP_201_CREATED)
         else:
-            return Response(status=status.HTTP_403_FORBIDDEN)
-
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class BookDetails(APIView):
     def get_queryset(self):
