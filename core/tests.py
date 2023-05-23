@@ -67,7 +67,7 @@ class BookModelTest(TestCase):
         valid_isbn = ["007462542X", "9971502100", "9604250590"]
         invalid_isbn = ["0-545-01022-5", "123-456-888", '8781234567', "9788390022"]
         for sn in valid_isbn:
-            book = Book(created_by=self.user, title="1", description="1", isbn=sn, published_date=datetime.now())
+            book = Book(created_by=self.user, managed_by=self.user, title="1", description="1", isbn=sn, published_date=datetime.now())
             book.full_clean()
         with self.assertRaises(ValidationError):
             for sn in invalid_isbn:
@@ -75,7 +75,7 @@ class BookModelTest(TestCase):
                 tier.full_clean()
 
     def test_multiple_authors(self):
-        book = Book.objects.create(created_by=self.user, title="1", description="1", isbn="9788390021", published_date=datetime.now())
+        book = Book.objects.create(created_by=self.user, managed_by=self.user, title="1", description="1", isbn="9788390021", published_date=datetime.now())
         book.authors.add(self.AMick, self.JSlow)
         self.assertEqual(book.authors.contains(self.JSlow), True)
         self.assertEqual(book.authors.contains(self.AMick), True)

@@ -34,8 +34,7 @@ class BookListTest(APITestCase):
 
     def setUp(self):
         self.user = LibraryUser.objects.create_user(username='user', password='user', is_superuser=False, user_type="S")
-        self.staff = LibraryUser.objects.create_user(username='staff', password='admin', is_superuser=True,
-                                                     user_type="S")
+        self.staff = LibraryUser.objects.create_user(username='staff', is_superuser=True, is_staff=True, user_type="S")
         self.AMick = Author.objects.create(first_name="Adam", last_name="Mickiewicz")
         self.JSlow = Author.objects.create(first_name="Juliusz", last_name="Slowacki")
         self.token_staff = Token.objects.create(user=self.staff)
@@ -44,31 +43,6 @@ class BookListTest(APITestCase):
     def test_method_get(self):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-    def test_method_post_unauthenticeted(self):
-        self.client.force_authenticate(user=None, token=None)
-        query = {
-            "authors": [
-                {
-                    "id": self.AMick.id,
-                    "first_name": self.AMick.first_name,
-                    "last_name": self.AMick.last_name,
-                },
-                {
-                    "first_name": "test_name",
-                    "last_name": "test_lastname",
-                }
-            ],
-            "created_by": self.staff.username,
-            "title": "title",
-            "description": "description",
-            "isbn": "9788390021",
-            "published_date": "2023-05-11T08:42:07Z"
-        }
-        response = self.client.post(self.url, query, format='json')
-        # book was not created, response code matches expectations
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertNotEquals(Book.objects.filter(isbn="9788390021").exists(), True)
 
     def test_method_post_authenticated_valid(self):
         query = {
@@ -83,7 +57,7 @@ class BookListTest(APITestCase):
                     "last_name": "test_lastname",
                 }
             ],
-            "created_by": self.staff.username,
+            "managed_by": self.user.username,
             "title": "title",
             "description": "description",
             "isbn": "9788390021",
@@ -107,6 +81,30 @@ class BookListTest(APITestCase):
         self.assertEquals(Book.objects.filter(isbn="007462542X").exists(), True)
         self.assertEqual(response.data, BookSerializer(Book.objects.get(isbn="007462542X")).data)
 
+    def test_method_post_unauthenticated(self):
+        self.client.force_authenticate(user=None, token=None)
+        query = {
+            "authors": [
+                {
+                    "id": self.AMick.id,
+                    "first_name": self.AMick.first_name,
+                    "last_name": self.AMick.last_name,
+                },
+                {
+                    "first_name": "test_name",
+                    "last_name": "test_lastname",
+                }
+            ],
+            "managed_by": self.user.username,
+            "title": "title",
+            "description": "description",
+            "isbn": "9788390021",
+            "published_date": "2023-05-11T08:42:07Z"
+        }
+        response = self.client.post(self.url, query, format='json')
+        # book was not created, response code matches expectations
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertNotEquals(Book.objects.filter(isbn="9788390021").exists(), True)
     def test_method_post_authenticated_invalid(self):
         # wrong created_by (user doesn't exist)
         query_createdby = {
@@ -142,15 +140,15 @@ class BookListTest(APITestCase):
 
 class BookDetailsTest(APITestCase):
     def setUp(self):
-        self.not_owner = LibraryUser.objects.create_user(username='not_owner', user_type="S", is_superuser=True)
-        self.owner = LibraryUser.objects.create_user(username='staff', user_type="S")
+        self.creator = LibraryUser.objects.create_user(username='not_owner', user_type="S", is_superuser=True)
+        self.manager = LibraryUser.objects.create_user(username='staff', user_type="S")
         self.AMick = Author.objects.create(first_name="Adam", last_name="Mickiewicz")
         JSlow = Author.objects.create(first_name="Juliusz", last_name="Slowacki")
-        self.book = Book.objects.create(created_by=self.owner, title='dziady', description=" ", isbn="9788390021")
+        self.book = Book.objects.create(created_by=self.creator, managed_by=self.manager, title='dziady', description=" ", isbn="9788390021")
         self.book.authors.add(self.AMick, JSlow)
         self.book.save()
         self.url = reverse('book-details', kwargs={'isbn': self.book.isbn})
-        self.token = Token.objects.create(user=self.owner)
+        self.token = Token.objects.create(user=self.manager)
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
 
     def test_method_get(self):
@@ -213,7 +211,7 @@ class BookDetailsTest(APITestCase):
             "isbn": "9781234567",
             "published_date": "2023-04-11T08:42:07Z"
         }
-        self.token = Token.objects.create(user=self.not_owner)
+        self.token = Token.objects.create(user=self.creator)
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
         response = self.client.patch(self.url, query, format='json')
         # got error response code
