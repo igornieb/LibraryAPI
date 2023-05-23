@@ -15,12 +15,13 @@ class BookList(ListCreateAPIView):
     permission_classes = [IsSuperuserOrReadOnly]
 
     def create(self, request, *args, **kwargs):
-        serializer = BookCreateSerializer(data=request.data)
+        serializer = BookCreateSerializer(data=request.data, partial=True)
         if serializer.is_valid():
-            book = serializer.save()
+            book = serializer.save(created_by=self.request.user)
             return Response(BookSerializer(book).data, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class BookDetails(APIView):
     def get_queryset(self):
@@ -34,7 +35,7 @@ class BookDetails(APIView):
 
     def patch(self, request, *args, **kwargs):
         queryset = self.get_queryset()
-        if queryset.created_by == request.user:
+        if queryset.managed_by == request.user:
             serializer = BookUpdateSerializer(queryset, data=request.data)
             if serializer.is_valid():
                 book = serializer.save()
