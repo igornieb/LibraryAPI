@@ -7,7 +7,7 @@ This API consists of:
 - Endpoint to log in by user
 - Public endpoint to serve data from models with all related objects
 - Private endpoint (only for superusers) to create entry with nested objects
-- Private endpoint (only for owners) to update entry with nested objects
+- Private endpoint (only for managers) to update entry with nested objects
 
 # How to run
 
@@ -165,7 +165,7 @@ Request:
                 },
               ...
             ],
-    "created_by": string,
+    "managed_by": string,
     "isbn": string,
     "title": string,
     "description": string,
@@ -187,6 +187,12 @@ Response:
          ...
         ],
     "created_by": {
+        "username": string,
+        "first_name": string,
+        "last_name": string,
+        "user_type": string
+    },
+    "managed_by": {
         "username": string,
         "first_name": string,
         "last_name": string,
