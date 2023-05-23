@@ -25,6 +25,7 @@ class Author(models.Model):
 
 class Book(models.Model):
     created_by = models.ForeignKey(LibraryUser, on_delete=models.DO_NOTHING)
+    managed_by = models.ForeignKey(LibraryUser, on_delete=models.DO_NOTHING, related_name="managed_by")
     authors = models.ManyToManyField('Author')
     isbn = models.CharField(max_length=10, validators=[ISBNValidator])
     title = models.TextField()
